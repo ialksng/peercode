@@ -12,15 +12,24 @@ const syncUser = inngest.createFunction(
     await connectDB();
 
     const { id, email_addresses, first_name, last_name, image_url } = event.data;
+    const email = email_addresses?.[0]?.email_address;
 
-    const newUser = {
+    if (!id || !email) {
+      throw new Error("Clerk user.created event is missing a user ID or email address");
+    }
+
+    const userData = {
       clerkId: id,
-      email: email_addresses[0]?.email_address,
-      name: `${first_name || ""} ${last_name || ""}`,
-      profileImage: image_url,
+      email,
+      name: [first_name, last_name].filter(Boolean).join(" ") || email.split("@")[0],
+      profileImage: image_url || "",
     };
 
-    await User.create(newUser);
+    const newUser = await User.findOneAndUpdate(
+      { clerkId: id },
+      { $setOnInsert: userData },
+      { new: true, upsert: true, setDefaultsOnInsert: true }
+    );
 
     await upsertStreamUser({
       id: newUser.clerkId.toString(),

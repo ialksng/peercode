@@ -1,26 +1,54 @@
-import { requireAuth } from "@clerk/express";
+import { clerkClient, getAuth } from "@clerk/express";
 import User from "../models/User.js";
+import { upsertStreamUser } from "../lib/stream.js";
 
 export const protectRoute = [
-  requireAuth(),
   async (req, res, next) => {
     try {
-      const clerkId = req.auth().userId;
+      const { isAuthenticated, userId: clerkId } = getAuth(req);
 
-      if (!clerkId) return res.status(401).json({ message: "Unauthorized - invalid token" });
+      if (!isAuthenticated || !clerkId) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
 
-      // find user in db by clerk ID
-      const user = await User.findOne({ clerkId });
+      let user = await User.findOne({ clerkId });
 
-      if (!user) return res.status(404).json({ message: "User not found" });
+      // A user may have signed up before the Clerk-to-Inngest webhook was configured.
+      // Provision that account on its first authenticated API request as a fallback.
+      if (!user) {
+        const clerkUser = await clerkClient.users.getUser(clerkId);
+        const email = clerkUser.primaryEmailAddress?.emailAddress;
 
-      // attach user to req
+        if (!email) {
+          return res.status(422).json({ message: "Your Clerk account needs a verified email address" });
+        }
+
+        const name = [clerkUser.firstName, clerkUser.lastName].filter(Boolean).join(" ") || email.split("@")[0];
+        user = await User.findOneAndUpdate(
+          { clerkId },
+          {
+            $setOnInsert: {
+              clerkId,
+              email,
+              name,
+              profileImage: clerkUser.imageUrl || "",
+            },
+          },
+          { new: true, upsert: true, setDefaultsOnInsert: true }
+        );
+
+        await upsertStreamUser({
+          id: clerkId,
+          name: user.name,
+          image: user.profileImage,
+        });
+      }
+
       req.user = user;
-
-      next();
+      return next();
     } catch (error) {
       console.error("Error in protectRoute middleware", error);
-      res.status(500).json({ message: "Internal Server Error" });
+      return res.status(500).json({ message: "Could not load your PeerCode account" });
     }
   },
 ];
