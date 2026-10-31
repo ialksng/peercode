@@ -8,6 +8,7 @@ import { connectDB } from "./lib/db.js";
 import { inngest, functions } from "./lib/inngest.js";
 
 import chatRoutes from "./routes/chatRoutes.js";
+import codeRoutes from "./routes/codeRoutes.js";
 import sessionRoutes from "./routes/sessionRoute.js";
 
 const app = express();
@@ -29,6 +30,7 @@ app
   .put(inngestHandler)
   .all((_req, res) => res.status(405).json({ message: "Method not allowed" }));
 app.use("/api/chat", chatRoutes);
+app.use("/api/code", codeRoutes);
 app.use("/api/sessions", sessionRoutes);
 
 app.get("/health", (req, res) => {
