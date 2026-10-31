@@ -69,13 +69,23 @@ npm run dev
 
 ## Deployment
 
-The client is intended to be served at `/work/projects/peercode/app/`. Vercel configuration redirects `/` to that path and rewrites app routes to the client entry point so nested pages work on refresh. Set the frontend environment variables above in Vercel, using the deployed backend URL for `VITE_API_URL`.
+### Vercel frontend
 
-Example environment files are provided at [`backend/.env.example`](backend/.env.example) and [`frontend/.env.example`](frontend/.env.example). Copy the relevant file to `.env` and replace the sample values. Never commit real keys.
+- Import the repository into Vercel and set **Root Directory** to `frontend`.
+- Build command: `npm run build`; output directory: `dist`.
+- Set `VITE_API_URL=https://peercode-le7n.onrender.com/api`, plus `VITE_CLERK_PUBLISHABLE_KEY` and `VITE_STREAM_API_KEY` for the Clerk and Stream instances used in production.
+- The Vite base path and `frontend/vercel.json` serve the app at `/work/projects/peercode/app/` and keep nested routes and assets working.
 
-Deploy the `backend` directory as a Node web service on Render. Configure `DB_URL`, `CLERK_SECRET_KEY`, `STREAM_API_KEY`, `STREAM_API_SECRET`, `CLIENT_URL` (the Vercel site origin), and the Inngest keys if using Inngest. Render supplies `PORT`.
+### Render backend
 
-Configure the Clerk production instance with the deployed site's domain and the matching publishable and secret keys. The Stream API key is public and is used by the browser; keep the Stream API secret and Clerk secret key only on the backend.
+- Create a Node web service from this repository and set **Root Directory** to `backend`.
+- Build command: `npm install`; start command: `npm start`.
+- Set `DB_URL`, `CLERK_SECRET_KEY`, `STREAM_API_KEY`, `STREAM_API_SECRET`, and `CLIENT_URL=https://ialksng.me,https://peercode-beige.vercel.app`. Render supplies `PORT`.
+- Set `INNGEST_EVENT_KEY` and `INNGEST_SIGNING_KEY` if using the Clerk user-sync jobs.
+
+To keep the app under your existing site's URL, copy [`cloudflare/pages-function/functions/work/projects/peercode/app/[[path]].js`](cloudflare/pages-function/functions/work/projects/peercode/app/%5B%5Bpath%5D%5D.js) into the same path under the existing Cloudflare Pages project's `functions/` directory. Pages Functions route requests by file path, and this function forwards the matching URL, including its path and query, to Vercel. Cloudflare Pages `_redirects` cannot proxy to external domains, so use a Pages Function for this cross-host route ([Pages Functions routing](https://developers.cloudflare.com/pages/functions/routing/), [Pages redirects](https://developers.cloudflare.com/pages/configuration/redirects/)). This repository contains the function template; it does not deploy it or change your Pages project or domain settings.
+
+Example environment files are provided at [`backend/.env.example`](backend/.env.example) and [`frontend/.env.example`](frontend/.env.example), with production deployment examples in each folder. Copy the relevant example and replace every placeholder. Never commit real keys. The Stream API key and Clerk publishable key are public; keep the Stream API secret and Clerk secret key on the backend only.
 
 ## License
 

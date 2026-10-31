@@ -1,0 +1,39 @@
+{
+  "redirects": [
+    {
+      "source": "/",
+      "destination": "/work/projects/peercode/app",
+      "permanent": false
+    }
+  ],
+  "rewrites": [
+    {
+      "source": "/work/projects/peercode/app/assets/:path*",
+      "destination": "/assets/:path*"
+    },
+    {
+      "source": "/work/projects/peercode/app/java.png",
+      "destination": "/java.png"
+    },
+    {
+      "source": "/work/projects/peercode/app/javascript.png",
+      "destination": "/javascript.png"
+    },
+    {
+      "source": "/work/projects/peercode/app/python.png",
+      "destination": "/python.png"
+    },
+    {
+      "source": "/work/projects/peercode/app",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/work/projects/peercode/app/",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/work/projects/peercode/app/:path*",
+      "destination": "/index.html"
+    }
+  ]
+}
